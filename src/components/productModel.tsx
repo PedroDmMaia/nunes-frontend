@@ -1,7 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as Dialog from '@radix-ui/react-dialog'
+import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
+
+import { createProduct } from '../api/postProduct'
+import { queryClient } from '../lib/react-query'
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -22,8 +27,23 @@ export function ProductModal() {
     resolver: zodResolver(productSchema),
   })
 
-  const onSubmit = (data: ProductForm) => {
-    console.log(data)
+  const { mutateAsync: createProductFn } = useMutation({
+    mutationFn: createProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+
+  const onSubmit = async (data: ProductForm) => {
+    try {
+      await createProductFn(data)
+
+      toast.success('Produto atualizado com sucesso')
+    } catch (error) {
+      console.error(error)
+
+      toast.error('Ocorreu um erro ao atulaizar o produto')
+    }
   }
 
   return (

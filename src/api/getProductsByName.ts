@@ -1,9 +1,11 @@
 import { api } from '../lib/axios'
 import { ProductResponse } from './getProduct'
 
-export async function searchProducts(name: string): Promise<ProductResponse[]> {
+export async function searchProductsByName(
+  name: string,
+): Promise<ProductResponse[]> {
   try {
-    const response = await api.get<ProductResponse[]>('/search', {
+    const response = await api.get<ProductResponse[]>('products/search', {
       params: { name },
     })
     return response.data

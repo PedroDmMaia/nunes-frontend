@@ -1,9 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Pencil } from 'lucide-react' // Importando o ícone de lápis
+import { useMutation } from '@tanstack/react-query'
+import { Pencil, X } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
+
+import { deleteProduct } from '../api/deleteProduct'
+import { updateProducts } from '../api/updateProducts'
+import { queryClient } from '../lib/react-query'
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -16,29 +22,49 @@ const productSchema = z.object({
 type ProductForm = z.infer<typeof productSchema>
 
 interface ProductCardProps {
+  id: string
   image?: string
   name: string
   description: string
   price: number
   quantity: number
   typeId: number
+  code: string
 }
 
 export function ProductCard({
+  id,
   image,
   name,
   description,
   price,
   quantity,
   typeId,
+  code,
 }: ProductCardProps) {
+  const { mutateAsync: updateProductFn } = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: ProductForm }) => {
+      return await updateProducts(id, data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+
+  const { mutateAsync: deleteProductFn } = useMutation({
+    mutationFn: async (id: string) => deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+
   const [isOpen, setIsOpen] = useState(false)
+  const [isOpenToDelete, setIsOpenToDelete] = useState(false)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
   } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -50,9 +76,30 @@ export function ProductCard({
     },
   })
 
-  const onSubmit = (data: ProductForm) => {
-    console.log('Updated Product:', data)
-    setIsOpen(false)
+  async function submitFn(data: ProductForm) {
+    try {
+      await updateProductFn({ id, data })
+      setIsOpen(false)
+
+      toast.success('Produto atualizado com sucesso')
+    } catch (error) {
+      console.log(error)
+
+      toast.error('Ocorreu um erro ao atulaizar o produto')
+    }
+  }
+
+  async function submitFnToDelete(id: string) {
+    try {
+      await deleteProductFn(id)
+      setIsOpenToDelete(false)
+
+      toast.success('Produto deletado com sucesso')
+    } catch (error) {
+      console.log(error)
+
+      toast.error('Ocorreu um erro ao deletar o produto')
+    }
   }
 
   return (
@@ -62,7 +109,7 @@ export function ProductCard({
         alt={name}
         className="w-full h-48 object-cover"
       />
-      <div className="p-4">
+      <div className="p-4 w-80">
         <h3 className="text-xl font-semibold mb-2">{name}</h3>
         <p className="text-gray-600 mb-2">{description}</p>
         <p className="text-lg font-bold text-blue-600">${price.toFixed(2)}</p>
@@ -70,9 +117,16 @@ export function ProductCard({
         <p className="text-gray-700">Type ID: {typeId}</p>
         <button
           onClick={() => setIsOpen(true)}
-          className="absolute top-2 right-2 p-2 bg-gray-200 rounded-full shadow-lg hover:bg-gray-300"
+          className="absolute top-2 right-2 p-2 bg-gray-200 rounded-full shadow-lg hover:bg-gray-300 transition-all duration-300"
         >
           <Pencil size={16} className="text-gray-600" />
+        </button>
+
+        <button
+          onClick={() => setIsOpenToDelete(true)}
+          className="absolute top-2 left-2 p-2 bg-red-200 rounded-full shadow-lg hover:bg-red-300 transition-all duration-300"
+        >
+          <X size={16} className="text-gray-600" />
         </button>
       </div>
 
@@ -82,9 +136,10 @@ export function ProductCard({
           <Dialog.Content className="fixed inset-0 flex items-center justify-center p-4">
             <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
               <Dialog.Title className="text-2xl font-bold mb-4">
-                Edit Product
+                Edit Product <span>{code}</span>
               </Dialog.Title>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Dialog.Description></Dialog.Description>
+              <form onSubmit={handleSubmit(submitFn)} className="space-y-4">
                 <div>
                   <label className="block font-medium mb-1">Name</label>
                   <input
@@ -166,6 +221,36 @@ export function ProductCard({
                   </button>
                 </div>
               </form>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <Dialog.Root open={isOpenToDelete} onOpenChange={setIsOpenToDelete}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-50" />
+          <Dialog.Content className="fixed inset-0 flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full flex flex-col gap-5">
+              <Dialog.Title className="text-2xl font-bold mb-4 text-center">
+                Tem certeza que deseja excluir este produto ?{' '}
+              </Dialog.Title>
+              <div className="flex justify-evenly">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button
+                  className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all duration-200"
+                  type="button"
+                  onClick={() => submitFnToDelete(id)}
+                >
+                  Sim
+                </button>
+              </div>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
