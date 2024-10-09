@@ -42,7 +42,7 @@ export function ProductCard({
   typeId,
   code,
 }: ProductCardProps) {
-  const { mutateAsync: updateProductFn } = useMutation({
+  const { mutateAsync: updateProductFn, isPending: isLoading } = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ProductForm }) => {
       return await updateProducts(id, data)
     },
@@ -112,7 +112,7 @@ export function ProductCard({
       <div className="p-4 w-80">
         <h3 className="text-xl font-semibold mb-2">{name}</h3>
         <p className="text-gray-600 mb-2">{description}</p>
-        <p className="text-lg font-bold text-blue-600">${price.toFixed(2)}</p>
+        <p className="text-lg font-bold text-zinc-950">${price.toFixed(2)}</p>
         <p className="text-gray-700 mt-2">Quantity: {quantity}</p>
         <p className="text-gray-700">Type ID: {typeId}</p>
         <button
@@ -208,16 +208,32 @@ export function ProductCard({
                   <Dialog.Close asChild>
                     <button
                       type="button"
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
+                      className="bg-red-200 hover:bg-transparent border-2 border-transparent hover:border-red-500 text-red-500 px-4 py-2 rounded-lg duration-200"
                     >
                       Cancel
                     </button>
                   </Dialog.Close>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    className="bg-zinc-950 text-white hover:text-zinc-950 px-4 py-2 rounded-lg hover:bg-transparent border-2 hover:border-zinc-950 flex items-center justify-center duration-200"
+                    disabled={isLoading}
                   >
-                    Save
+                    {isLoading ? (
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        ></path>
+                      </svg>
+                    ) : (
+                      'Save'
+                    )}
                   </button>
                 </div>
               </form>

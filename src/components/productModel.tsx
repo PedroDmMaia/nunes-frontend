@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useMutation } from '@tanstack/react-query'
+import { useState } from 'react' // Importando useState para controlar o modal
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -19,6 +20,8 @@ const productSchema = z.object({
 type ProductForm = z.infer<typeof productSchema>
 
 export function ProductModal() {
+  const [isOpen, setIsOpen] = useState(false) // Estado para controlar se o modal está aberto
+
   const {
     register,
     handleSubmit,
@@ -27,7 +30,7 @@ export function ProductModal() {
     resolver: zodResolver(productSchema),
   })
 
-  const { mutateAsync: createProductFn } = useMutation({
+  const { mutateAsync: createProductFn, isPending: isLoading } = useMutation({
     mutationFn: createProduct,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
@@ -37,19 +40,22 @@ export function ProductModal() {
   const onSubmit = async (data: ProductForm) => {
     try {
       await createProductFn(data)
-
       toast.success('Produto atualizado com sucesso')
+
+      setIsOpen(false) // Fecha o modal após o sucesso
     } catch (error) {
       console.error(error)
-
-      toast.error('Ocorreu um erro ao atulaizar o produto')
+      toast.error('Ocorreu um erro ao atualizar o produto')
     }
   }
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
-        <button className="fixed bottom-4 right-4 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-4 right-4 bg-zinc-800 hover:bg-zinc-600 text-white p-4 rounded-full shadow-lg h-[2.6rem] flex justify-center items-center duration-200"
+        >
           +
         </button>
       </Dialog.Trigger>
@@ -125,16 +131,32 @@ export function ProductModal() {
                 <Dialog.Close asChild>
                   <button
                     type="button"
-                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
+                    className="bg-red-200 hover:bg-transparent border-2 border-transparent hover:border-red-500 text-red-500 px-4 py-2 rounded-lg duration-200"
                   >
                     Cancel
                   </button>
                 </Dialog.Close>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                  className="bg-zinc-950 text-white hover:text-zinc-950 px-4 py-2 rounded-lg hover:bg-transparent border-2 border-transparent hover:border-zinc-950 flex items-center justify-center duration-200"
+                  disabled={isLoading}
                 >
-                  Save
+                  {isLoading ? (
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
+                    </svg>
+                  ) : (
+                    'Save'
+                  )}
                 </button>
               </div>
             </form>
