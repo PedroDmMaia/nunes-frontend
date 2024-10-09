@@ -111,7 +111,9 @@ export function ProductCard({
       />
       <div className="p-4 w-80">
         <h3 className="text-xl font-semibold mb-2">{name}</h3>
-        <p className="text-gray-600 mb-2">{description}</p>
+        <p className="text-gray-600 mb-2 h-20 overflow-y-scroll">
+          {description}
+        </p>
         <p className="text-lg font-bold text-zinc-950">${price.toFixed(2)}</p>
         <p className="text-gray-700 mt-2">Quantity: {quantity}</p>
         <p className="text-gray-700">Type ID: {typeId}</p>
@@ -220,7 +222,7 @@ export function ProductCard({
                   >
                     {isLoading ? (
                       <svg
-                        className="animate-spin h-5 w-5 text-white"
+                        className="animate-spin h-5 w-5 text-white hover:text-zinc-950"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
